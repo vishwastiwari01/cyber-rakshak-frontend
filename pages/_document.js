@@ -5,10 +5,11 @@ export default function Document() {
     <Html lang="en">
       <Head>
         <meta name="description" content="Cyber Rakshak AI — Active Cyber Intelligence Platform" />
-        <meta name="theme-color" content="#020617" />
+        <meta name="theme-color" content="#04060f" />
+        {/* JetBrains Mono for monospace numbers + Inter for UI */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
       </Head>
       <body>
         <Main />

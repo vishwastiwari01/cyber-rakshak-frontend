@@ -11,60 +11,73 @@ const SCAM_LABELS = {
   job_scam: 'Job Scam', phishing: 'Phishing', unknown: 'Unknown'
 };
 
+const STATUS_STYLE = {
+  active:    { color: '#00d68f', bg: 'rgba(0,214,143,0.08)',   border: 'rgba(0,214,143,0.2)' },
+  escalated: { color: '#ff6b35', bg: 'rgba(255,107,53,0.08)', border: 'rgba(255,107,53,0.2)' },
+  closed:    { color: '#4a5568', bg: 'rgba(74,85,104,0.08)',   border: 'rgba(74,85,104,0.2)' },
+  reported:  { color: '#9b72ff', bg: 'rgba(155,114,255,0.08)', border: 'rgba(155,114,255,0.2)' },
+};
+
+function SectionHeader({ title, action }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{title}</span>
+      {action}
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const [overview, setOverview]     = useState(null);
-  const [threats, setThreats]       = useState([]);
-  const [cases, setCases]           = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
+  const [overview, setOverview] = useState(null);
+  const [threats, setThreats]   = useState([]);
+  const [cases, setCases]       = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 30000); // refresh every 30s
-    return () => clearInterval(interval);
+    load();
+    const t = setInterval(load, 30000);
+    return () => clearInterval(t);
   }, []);
 
-  async function loadData() {
+  async function load() {
     try {
       const [ov, th, cs] = await Promise.all([
         api.get('/api/analytics/overview'),
         api.get('/api/analytics/top-threats'),
-        api.get('/api/cases?limit=5')
+        api.get('/api/cases?limit=5'),
       ]);
-      setOverview(ov);
-      setThreats(th.threats || []);
-      setCases(cs.cases || []);
+      setOverview(ov); setThreats(th.threats || []); setCases(cs.cases || []);
       setError(null);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
   }
 
   const s = overview?.summary || {};
 
   return (
-    <Layout title="SOC Dashboard">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+    <Layout>
+      {/* Page header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>
-            🛡️ SOC Dashboard
-          </h1>
-          <p style={{ color: '#64748b', margin: '4px 0 0', fontSize: 13 }}>
-            Security Operations Center — Cyber Rakshak AI Platform
-          </p>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', letterSpacing: '0.1em', marginBottom: 4 }}>SECURITY OPERATIONS CENTER</div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-0)', margin: 0, lineHeight: 1.2 }}>Dashboard</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span className="pulse-dot" />
-          <span style={{ fontSize: 12, color: '#10b981' }}>LIVE</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span className="dot-live" />
+            <span style={{ fontSize: 11, color: 'var(--green)', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>LIVE</span>
+          </div>
           <Link href="/engage">
             <button style={{
-              padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: 'linear-gradient(135deg,#06b6d4,#3b82f6)',
-              color: '#fff', fontWeight: 600, fontSize: 13
-            }}>
+              padding: '8px 18px', borderRadius: 6, border: '1px solid var(--accent-b)',
+              background: 'var(--accent-d)', color: 'var(--accent)',
+              fontWeight: 600, fontSize: 12, cursor: 'pointer',
+              letterSpacing: '0.04em', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-b)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent-d)'; }}
+            >
               + New Engagement
             </button>
           </Link>
@@ -72,54 +85,53 @@ export default function Dashboard() {
       </div>
 
       {error && (
-        <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#ef4444', fontSize: 13 }}>
-          ⚠️ {error} — Check your backend URL and JWT token.
+        <div style={{ background: 'rgba(255,61,87,0.08)', border: '1px solid rgba(255,61,87,0.2)', borderRadius: 6, padding: '10px 14px', marginBottom: 20, color: 'var(--red)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+          ERR: {error}
         </div>
       )}
 
-      {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
-        <StatCard label="Total Cases"       value={loading ? '—' : s.total_cases || 0}      icon="📁" color="#06b6d4" />
-        <StatCard label="Active Cases"      value={loading ? '—' : s.active_cases || 0}     icon="🔴" color="#ef4444" sub="Ongoing engagements" />
-        <StatCard label="Intel Extracted"   value={loading ? '—' : s.total_intelligence || 0} icon="🔍" color="#10b981" sub="Artifacts collected" />
-        <StatCard label="Avg Frustration"   value={loading ? '—' : `${s.avg_frustration_score || 0}%`} icon="😤" color="#f59e0b" sub="Scammer frustration" />
+      {/* Stats row 1 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
+        <StatCard label="Total Cases"     value={loading ? '—' : s.total_cases || 0}          accent />
+        <StatCard label="Active"          value={loading ? '—' : s.active_cases || 0}         sub="Ongoing engagements" />
+        <StatCard label="Intel Collected" value={loading ? '—' : s.total_intelligence || 0}   sub="Artifacts extracted" />
+        <StatCard label="Avg Frustration" value={loading ? '—' : `${s.avg_frustration_score || 0}%`} sub="Scammer frustration score" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-        <StatCard label="Reports Generated" value={loading ? '—' : s.total_reports || 0}         icon="📋" color="#a78bfa" />
-        <StatCard label="Submitted (NCRP)"  value={loading ? '—' : s.submitted_reports || 0}     icon="⚖️" color="#34d399" />
-        <StatCard label="Escalated Cases"   value={loading ? '—' : s.escalated_cases || 0}       icon="🚨" color="#f97316" />
+      {/* Stats row 2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+        <StatCard label="Reports Generated" value={loading ? '—' : s.total_reports || 0}      dim />
+        <StatCard label="Submitted to NCRP" value={loading ? '—' : s.submitted_reports || 0} dim />
+        <StatCard label="Escalated"         value={loading ? '—' : s.escalated_cases || 0}   dim />
       </div>
 
-      {/* Main content grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-
+      {/* Two column section */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* Top Threats */}
-        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ color: '#f1f5f9', margin: '0 0 16px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-            🚨 Top Active Threats
-          </h3>
+        <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
+          <SectionHeader title="Active Threats" />
           {threats.length === 0 && !loading && (
-            <p style={{ color: '#475569', fontSize: 13 }}>No active threats.</p>
+            <div style={{ padding: '20px 0', color: 'var(--text-2)', fontSize: 12, textAlign: 'center' }}>No active threats detected</div>
           )}
           {threats.map((c, i) => (
-            <Link key={c.id} href={`/cases/${c.id}`} style={{ textDecoration: 'none' }}>
+            <Link key={c.id} href={`/cases/${c.id}`}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 0', borderBottom: i < threats.length - 1 ? '1px solid #1e293b' : 'none',
-                cursor: 'pointer'
+                padding: '10px 0',
+                borderBottom: i < threats.length - 1 ? '1px solid var(--border)' : 'none',
+                cursor: 'pointer',
               }}>
                 <div>
-                  <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-0)', fontWeight: 500, marginBottom: 2 }}>
                     {SCAM_LABELS[c.scam_type] || 'Unknown'}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>
                     {c.channel} · {c.persona_used}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <ThreatBadge level={c.threat_level} />
-                  <span style={{ fontSize: 11, color: '#64748b' }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-2)' }}>
                     {new Date(c.created_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -129,85 +141,88 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Cases */}
-        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ color: '#f1f5f9', margin: 0, fontSize: 15 }}>📁 Recent Cases</h3>
-            <Link href="/cases" style={{ fontSize: 12, color: '#06b6d4', textDecoration: 'none' }}>View all →</Link>
-          </div>
+        <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
+          <SectionHeader
+            title="Recent Cases"
+            action={<Link href="/cases"><span style={{ fontSize: 11, color: 'var(--accent)', cursor: 'pointer' }}>View all →</span></Link>}
+          />
           {cases.length === 0 && !loading && (
-            <p style={{ color: '#475569', fontSize: 13 }}>No cases yet. Start an engagement.</p>
+            <div style={{ padding: '20px 0', color: 'var(--text-2)', fontSize: 12, textAlign: 'center' }}>No cases yet — start an engagement</div>
           )}
           {cases.map((c, i) => (
-            <Link key={c.id} href={`/cases/${c.id}`} style={{ textDecoration: 'none' }}>
+            <Link key={c.id} href={`/cases/${c.id}`}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 0', borderBottom: i < cases.length - 1 ? '1px solid #1e293b' : 'none'
+                padding: '10px 0',
+                borderBottom: i < cases.length - 1 ? '1px solid var(--border)' : 'none',
+                cursor: 'pointer',
               }}>
                 <div>
-                  <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-0)', fontWeight: 500, marginBottom: 2 }}>
                     {SCAM_LABELS[c.scam_type] || 'New Case'}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                    {c.id.slice(0, 8)}… · {c.persona_used}
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>
+                    {c.id.slice(0, 10)}…
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{
-                    padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
-                    color: c.status === 'active' ? '#10b981' : '#94a3b8',
-                    background: c.status === 'active' ? 'rgba(16,185,129,0.12)' : 'rgba(148,163,184,0.1)',
-                    border: `1px solid ${c.status === 'active' ? '#10b981' : '#334155'}`
-                  }}>
-                    {c.status.toUpperCase()}
-                  </span>
-                </div>
+                {(() => {
+                  const st = STATUS_STYLE[c.status] || STATUS_STYLE.closed;
+                  return (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                      fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
+                      color: st.color, background: st.bg, border: `1px solid ${st.border}`,
+                    }}>
+                      {c.status.toUpperCase()}
+                    </span>
+                  );
+                })()}
               </div>
             </Link>
           ))}
         </div>
+      </div>
 
-        {/* Scam Type Distribution */}
-        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ color: '#f1f5f9', margin: '0 0 16px', fontSize: 15 }}>📊 Scam Type Distribution</h3>
+      {/* Bottom row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {/* Scam distribution */}
+        <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
+          <SectionHeader title="Scam Type Distribution" />
+          {overview && Object.entries(overview.cases_by_scam_type || {}).length === 0 && (
+            <div style={{ color: 'var(--text-2)', fontSize: 12 }}>No data yet</div>
+          )}
           {overview && Object.entries(overview.cases_by_scam_type || {}).map(([type, count]) => {
-            const total = s.total_cases || 1;
-            const pct = Math.round((count / total) * 100);
+            const pct = Math.round((count / (s.total_cases || 1)) * 100);
             return (
-              <div key={type} style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>{SCAM_LABELS[type] || type}</span>
-                  <span style={{ fontSize: 12, color: '#06b6d4', fontWeight: 600 }}>{count} ({pct}%)</span>
+              <div key={type} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-1)' }}>{SCAM_LABELS[type] || type}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>{count} / {pct}%</span>
                 </div>
-                <div style={{ height: 6, background: '#1e293b', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#06b6d4,#3b82f6)', borderRadius: 3, transition: 'width 0.5s' }} />
+                <div style={{ height: 3, background: 'var(--bg-3)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 2, opacity: 0.7, transition: 'width 0.6s' }} />
                 </div>
               </div>
             );
           })}
-          {!overview && <p style={{ color: '#475569', fontSize: 13 }}>Loading…</p>}
         </div>
 
-        {/* Intelligence Summary */}
-        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ color: '#f1f5f9', margin: '0 0 16px', fontSize: 15 }}>🔍 Intelligence Collected</h3>
-          {overview && Object.entries(overview.intelligence_by_type || {}).map(([type, count]) => {
-            const icons = {
-              phone_number: '📞', upi_id: '💳', bank_account: '🏦',
-              url: '🔗', email_address: '📧', ip_address: '🌐', name: '👤'
-            };
-            return (
-              <div key={type} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '8px 0', borderBottom: '1px solid #1e293b'
-              }}>
-                <span style={{ fontSize: 13, color: '#94a3b8' }}>
-                  {icons[type] || '🔹'} {type.replace(/_/g, ' ')}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#10b981' }}>{count}</span>
-              </div>
-            );
-          })}
-          {!overview && <p style={{ color: '#475569', fontSize: 13 }}>Loading…</p>}
+        {/* Intel summary */}
+        <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
+          <SectionHeader title="Intelligence Collected" />
+          {overview && Object.entries(overview.intelligence_by_type || {}).map(([type, count]) => (
+            <div key={type} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-1)', textTransform: 'capitalize' }}>
+                {type.replace(/_/g, ' ')}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                {count}
+              </span>
+            </div>
+          ))}
+          {(!overview || Object.keys(overview.intelligence_by_type || {}).length === 0) && (
+            <div style={{ color: 'var(--text-2)', fontSize: 12 }}>No artifacts extracted yet</div>
+          )}
         </div>
       </div>
     </Layout>

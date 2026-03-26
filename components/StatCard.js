@@ -1,22 +1,32 @@
-export default function StatCard({ label, value, icon, color = '#06b6d4', sub }) {
+// Terminal-inspired stat card
+export default function StatCard({ label, value, sub, accent = false, dim = false }) {
   return (
     <div style={{
-      background: '#0f172a',
-      border: '1px solid #1e293b',
-      borderRadius: 12,
-      padding: '20px 24px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 6
+      background: 'var(--bg-2)',
+      border: `1px solid ${accent ? 'var(--accent-b)' : 'var(--border)'}`,
+      borderRadius: 'var(--radius)',
+      padding: '20px 22px',
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'border-color 0.2s',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          {label}
-        </div>
-        <span style={{ fontSize: 22 }}>{icon}</span>
+      {/* Top accent bar */}
+      {accent && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, var(--accent), transparent)' }} />
+      )}
+      <div style={{ fontSize: 10, color: 'var(--text-2)', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase', marginBottom: 12 }}>
+        {label}
       </div>
-      <div style={{ fontSize: 32, fontWeight: 700, color, lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: '#64748b' }}>{sub}</div>}
+      <div style={{
+        fontSize: 30, fontWeight: 700, lineHeight: 1,
+        fontFamily: 'var(--font-mono)',
+        color: dim ? 'var(--text-2)' : accent ? 'var(--accent)' : 'var(--text-0)',
+      }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 8 }}>{sub}</div>
+      )}
     </div>
   );
 }
